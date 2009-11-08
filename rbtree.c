@@ -1096,11 +1096,10 @@ static VALUE
 rbtree_begin_inspect(VALUE self)
 {
     const char* c = rb_class2name(CLASS_OF(self));
-    VALUE str = rb_str_new(0, strlen(c) + 5);
-    sprintf(RSTRING_PTR(str), "#<%s: ", c);
-    //const size_t len = 
-    //RSTRING(str)->len = len;
-    return str;
+    char str [strlen(c) + 5];
+    sprintf(str, "#<%s: ", c);
+    VALUE rb_str = rb_str_new2(str);
+    return rb_str;
 }
 
 static VALUE
