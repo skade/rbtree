@@ -1181,7 +1181,6 @@ inspect_rbtree(VALUE self, VALUE ret)
 VALUE
 rbtree_inspect_recursive(VALUE self, VALUE arg, int recursive)
 {
-    //printf("Recursive: %i", recursive);
     VALUE str = rbtree_begin_inspect(self);
     if (recursive)
         return rb_str_cat2(str, "...>");
@@ -1482,7 +1481,7 @@ rbtree_pretty_print(VALUE self, VALUE pp)
 VALUE
 rbtree_pretty_print_cycle(VALUE self, VALUE pp)
 {
-    return rb_funcall(pp, id_pp, 1, rbtree_inspect(self));
+    return rb_funcall(pp, id_pp, 1, rbtree_inspect_recursive(self, Qnil, 1));
 }
 
 /*********************************************************************/
