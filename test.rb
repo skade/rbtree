@@ -1,4 +1,4 @@
-require "rbtree"
+require "./rbtree"
 require "test/unit.rb"
 
 class RBTreeTest < Test::Unit::TestCase
