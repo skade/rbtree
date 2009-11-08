@@ -2,9 +2,9 @@
  * MIT License
  * Copyright (c) 2002-2004, 2007, 2009 OZAWA Takuma
  */
-#include <ruby.h>
-#include <version.h>
-#include <st.h>
+#include <ruby/ruby.h>
+#include <ruby/version.h>
+#include <ruby/st.h>
 #include <stdarg.h>
 #include "dict.h"
 
@@ -184,24 +184,24 @@ rbtree_s_create(int argc, VALUE* argv, VALUE klass)
         tmp = rb_check_convert_type(argv[0], T_HASH, "Hash", "to_hash");
         if (!NIL_P(tmp)) {
             rbtree = rbtree_alloc(klass);
-            st_foreach(RHASH(tmp)->tbl, hash_to_rbtree_i, rbtree);
+            st_foreach(RHASH_TBL(tmp), hash_to_rbtree_i, rbtree);
             return rbtree;
         }
         
         tmp = rb_check_array_type(argv[0]);
         if (!NIL_P(tmp)) {
             rbtree = rbtree_alloc(klass);
-            for (i = 0; i < RARRAY(tmp)->len; i++) {
-                VALUE v = rb_check_array_type(RARRAY(tmp)->ptr[i]);
+            for (i = 0; i < RARRAY_LEN(tmp); i++) {
+                VALUE v = rb_check_array_type(RARRAY_PTR(tmp)[i]);
                 if (NIL_P(v)) {
                     continue;
                 }
-                switch(RARRAY(v)->len) {
+                switch(RARRAY_LEN(v)) {
                 case 1:
-                    rbtree_aset(rbtree, RARRAY(v)->ptr[0], Qnil);
+                    rbtree_aset(rbtree, RARRAY_PTR(v)[0], Qnil);
                     break;
                 case 2:
-                    rbtree_aset(rbtree, RARRAY(v)->ptr[0], RARRAY(v)->ptr[1]);
+                    rbtree_aset(rbtree, RARRAY_PTR(v)[0], RARRAY_PTR(v)[1]);
                     break;
                 default:
                     continue;
@@ -1059,7 +1059,7 @@ rbtree_to_a(VALUE self)
 static each_return_t
 to_hash_i(dnode_t* node, void* hash)
 {
-    st_insert(RHASH(hash)->tbl, GET_KEY(node), GET_VAL(node));
+    st_insert(RHASH_TBL(hash), GET_KEY(node), GET_VAL(node));
     return EACH_NEXT;
 }
 
@@ -1097,8 +1097,9 @@ rbtree_begin_inspect(VALUE self)
 {
     const char* c = rb_class2name(CLASS_OF(self));
     VALUE str = rb_str_new(0, strlen(c) + 5);
-    const size_t len = sprintf(RSTRING(str)->ptr, "#<%s: ", c);
-    RSTRING(str)->len = len;
+    sprintf(RSTRING_PTR(str), "#<%s: ", c);
+    //const size_t len = 
+    //RSTRING(str)->len = len;
     return str;
 }
 
@@ -1108,15 +1109,24 @@ to_s_rbtree(VALUE self, VALUE nil)
     return rb_ary_to_s(rbtree_to_a(self));
 }
 
+VALUE
+rbtree_to_s_recursive(VALUE self, VALUE arg, int recursive)
+{
+    if (recursive)
+        rb_str_cat2(rbtree_begin_inspect(self), "...>");
+    return to_s_rbtree(self, Qnil);
+}
+
 /*
  *
  */
 VALUE
 rbtree_to_s(VALUE self)
 {
-    if (rb_inspecting_p(self))
-        return rb_str_cat2(rbtree_begin_inspect(self), "...>");
-    return rb_protect_inspect(to_s_rbtree, self, Qnil);
+    return rb_exec_recursive(rbtree_to_s_recursive, self, Qnil);
+    //if (rb_inspecting_p(self))
+    //    return rb_str_cat2(rbtree_begin_inspect(self), "...>");
+    //return rb_protect_inspect(to_s_rbtree, self, Qnil);
 }
 
 static each_return_t
@@ -1125,8 +1135,8 @@ inspect_i(dnode_t* node, void* ret_)
     VALUE ret = (VALUE)ret_;
     VALUE str;
 
-    if (RSTRING(ret)->ptr[0] == '-')
-        RSTRING(ret)->ptr[0] = '#';
+    if (RSTRING_PTR(ret)[0] == '-')
+        RSTRING_PTR(ret)[0] = '#';
     else
         rb_str_cat2(ret, ", ");
 
@@ -1149,9 +1159,9 @@ inspect_rbtree(VALUE self, VALUE ret)
     VALUE str;
     
     rb_str_cat2(ret, "{");
-    RSTRING(ret)->ptr[0] = '-';
+    RSTRING_PTR(ret)[0] = '-';
     rbtree_for_each(self, inspect_i, (void*)ret);
-    RSTRING(ret)->ptr[0] = '#';
+    RSTRING_PTR(ret)[0] = '#';
     rb_str_cat2(ret, "}");
 
     str = rb_inspect(IFNONE(self));
@@ -1169,16 +1179,25 @@ inspect_rbtree(VALUE self, VALUE ret)
     return ret;
 }
 
+VALUE
+rbtree_inspect_recursive(VALUE self, VALUE arg, int recursive)
+{
+    VALUE str = rbtree_begin_inspect(self);
+    if (recursive)
+        return rb_str_cat2(str, "...>");
+    return inspect_rbtree(self, str);
+}
+
 /*
  *
  */
 VALUE
 rbtree_inspect(VALUE self)
 {
-    VALUE str = rbtree_begin_inspect(self);
+    /*VALUE str = rbtree_begin_inspect(self);
     if (rb_inspecting_p(self))
-        return rb_str_cat2(str, "...>");
-    return rb_protect_inspect(inspect_rbtree, self, str);
+        return rb_str_cat2(str, "...>");*/
+    return rb_exec_recursive(rbtree_inspect_recursive, self, Qnil);
 }
 
 /*
@@ -1510,8 +1529,8 @@ rbtree_s_load(VALUE klass, VALUE str)
 {
     VALUE rbtree = rbtree_alloc(klass);
     VALUE ary = rb_marshal_load(str);
-    VALUE* ptr = RARRAY(ary)->ptr;
-    long len = RARRAY(ary)->len - 1;
+    VALUE* ptr = RARRAY_PTR(ary);
+    long len = RARRAY_LEN(ary) - 1;
     long i;
     
     for (i = 0; i < len; i += 2)
