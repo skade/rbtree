@@ -1,0 +1,10 @@
+ChangeLog
+LICENSE
+MANIFEST
+README
+depend
+dict.c
+dict.h
+extconf.rb
+rbtree.c
+test.rb
