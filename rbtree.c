@@ -1059,7 +1059,7 @@ rbtree_to_a(VALUE self)
 static each_return_t
 to_hash_i(dnode_t* node, void* hash)
 {
-    st_insert(RHASH_TBL(hash), GET_KEY(node), GET_VAL(node));
+    st_insert(RHASH_TBL((long)hash), GET_KEY(node), GET_VAL(node));
     return EACH_NEXT;
 }
 
@@ -1181,6 +1181,7 @@ inspect_rbtree(VALUE self, VALUE ret)
 VALUE
 rbtree_inspect_recursive(VALUE self, VALUE arg, int recursive)
 {
+    //printf("Recursive: %i", recursive);
     VALUE str = rbtree_begin_inspect(self);
     if (recursive)
         return rb_str_cat2(str, "...>");
