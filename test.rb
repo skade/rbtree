@@ -497,7 +497,12 @@ class RBTreeTest < Test::Unit::TestCase
   end
 
   def test_to_s
-    assert_equal("aAbBcCdD", @rbtree.to_s)
+    if RUBY_VERSION < "1.9"
+      assert_equal("aAbBcCdD", @rbtree.to_s)
+    else #Ruby 1.9 Array#to_s behaves differently
+      val = "[[\"a\", \"A\"], [\"b\", \"B\"], [\"c\", \"C\"], [\"d\", \"D\"]]"
+      assert_equal(val, @rbtree.to_s)
+    end
   end
   
   def test_to_hash
@@ -778,7 +783,13 @@ class MultiRBTreeTest < Test::Unit::TestCase
   end
 
   def test_to_s
-    assert_equal("aAbBbCbDcC", @rbtree.to_s)
+    if RUBY_VERSION < "1.9"
+      assert_equal("aAbBbCbDcC", @rbtree.to_s)
+    else
+      val = "[[\"a\", \"A\"], [\"b\", \"B\"], [\"b\", \"C\"], \
+[\"b\", \"D\"], [\"c\", \"C\"]]"
+      assert_equal(val, @rbtree.to_s)
+    end
   end
   
   def test_to_hash
