@@ -11,8 +11,15 @@
 #define RBTREE_PROC_DEFAULT FL_USER2
 #define HASH_PROC_DEFAULT   FL_USER2
 
-#ifndef HAVE_RB_ENUMERATORIZE
+#ifndef RETURN_ENUMERATOR
 #define RETURN_ENUMERATOR(obj, argc, argv) ((void)0)
+#endif
+
+#ifndef RHASH_TBL
+#define RHASH_TBL(h) RHASH(h)->tbl
+#endif
+#ifndef RHASH_IFNONE
+#define RHASH_IFNONE(h) RHASH(h)->ifnone
 #endif
 
 VALUE RBTree;
@@ -427,7 +434,7 @@ rbtree_default_proc(VALUE self)
 static int
 value_eq(const void* key1, const void* key2)
 {
-    return rb_equal((VALUE)key1, (VALUE)key2);
+    return rb_equal((VALUE)key1, (VALUE)key2) != 0;
 }
 
 /*
@@ -1076,7 +1083,7 @@ rbtree_to_hash(VALUE self)
     
     hash = rb_hash_new();
     rbtree_for_each(self, to_hash_i, (void*)hash);
-    RHASH(hash)->ifnone = IFNONE(self);
+    RHASH_IFNONE(hash) = IFNONE(self);
     if (FL_TEST(self, RBTREE_PROC_DEFAULT))
         FL_SET(hash, HASH_PROC_DEFAULT);
     OBJ_INFECT(hash, self);
@@ -1096,9 +1103,8 @@ static VALUE
 rbtree_begin_inspect(VALUE self)
 {
     const char* c = rb_class2name(CLASS_OF(self));
-    char str [strlen(c) + 5];
-    sprintf(str, "#<%s: ", c);
-    VALUE rb_str = rb_str_new2(str);
+    VALUE rb_str = rb_str_new(0, strlen(c) + 4);
+    sprintf(RSTRING_PTR(rb_str), "#<%s: ", c);
     return rb_str;
 }
 
@@ -1108,6 +1114,7 @@ to_s_rbtree(VALUE self, VALUE nil)
     return rb_ary_to_s(rbtree_to_a(self));
 }
 
+#ifdef HAVE_RB_EXEC_RECURSIVE
 VALUE
 rbtree_to_s_recursive(VALUE self, VALUE arg, int recursive)
 {
@@ -1115,6 +1122,7 @@ rbtree_to_s_recursive(VALUE self, VALUE arg, int recursive)
         rb_str_cat2(rbtree_begin_inspect(self), "...>");
     return to_s_rbtree(self, Qnil);
 }
+#endif
 
 /*
  *
@@ -1122,10 +1130,13 @@ rbtree_to_s_recursive(VALUE self, VALUE arg, int recursive)
 VALUE
 rbtree_to_s(VALUE self)
 {
+#ifdef HAVE_RB_EXEC_RECURSIVE
     return rb_exec_recursive(rbtree_to_s_recursive, self, Qnil);
-    //if (rb_inspecting_p(self))
-    //    return rb_str_cat2(rbtree_begin_inspect(self), "...>");
-    //return rb_protect_inspect(to_s_rbtree, self, Qnil);
+#else
+    if (rb_inspecting_p(self))
+ return rb_str_cat2(rbtree_begin_inspect(self), "...>");
+    return rb_protect_inspect(to_s_rbtree, self, Qnil);
+#endif
 }
 
 static each_return_t
@@ -1178,6 +1189,7 @@ inspect_rbtree(VALUE self, VALUE ret)
     return ret;
 }
 
+#ifdef HAVE_RB_EXEC_RECURSIVE
 VALUE
 rbtree_inspect_recursive(VALUE self, VALUE arg, int recursive)
 {
@@ -1186,6 +1198,7 @@ rbtree_inspect_recursive(VALUE self, VALUE arg, int recursive)
         return rb_str_cat2(str, "...>");
     return inspect_rbtree(self, str);
 }
+#endif
 
 /*
  *
@@ -1193,10 +1206,14 @@ rbtree_inspect_recursive(VALUE self, VALUE arg, int recursive)
 VALUE
 rbtree_inspect(VALUE self)
 {
-    /*VALUE str = rbtree_begin_inspect(self);
-    if (rb_inspecting_p(self))
-        return rb_str_cat2(str, "...>");*/
+#ifdef HAVE_RB_EXEC_RECURSIVE
     return rb_exec_recursive(rbtree_inspect_recursive, self, Qnil);
+#else
+    VALUE str = rbtree_begin_inspect(self);
+    if (rb_inspecting_p(self))
+        return rb_str_cat2(str, "...>");
+    return rb_protect_inspect(inspect_rbtree, self, str);
+#endif
 }
 
 /*
@@ -1481,7 +1498,11 @@ rbtree_pretty_print(VALUE self, VALUE pp)
 VALUE
 rbtree_pretty_print_cycle(VALUE self, VALUE pp)
 {
+#ifdef HAVE_RB_EXEC_RECURSIVE
     return rb_funcall(pp, id_pp, 1, rbtree_inspect_recursive(self, Qnil, 1));
+#else
+    return rb_funcall(pp, id_pp, 1, rbtree_inspect(self));
+#endif
 }
 
 /*********************************************************************/

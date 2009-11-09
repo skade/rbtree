@@ -135,7 +135,7 @@ class RBTreeTest < Test::Unit::TestCase
     assert_equal("e", rbtree.default("f"))
     assert_raises(ArgumentError) { rbtree.default("e", "f") }
     
-    rbtree = RBTree.new {|rbtree, key| @rbtree[key || "c"] }
+    rbtree = RBTree.new {|tree, key| @rbtree[key || "c"] }
     assert_equal("C", rbtree.default(nil))
     assert_equal("B", rbtree.default("b"))
   end
@@ -181,7 +181,7 @@ class RBTreeTest < Test::Unit::TestCase
     
     a = RBTree.new
     b = RBTree.new
-    a.readjust {|a, b| a <=> b }
+    a.readjust {|x, y| x <=> y }
     assert_not_equal(a, b)
     b.readjust(a.cmp_proc)
     assert_equal(a, b)
@@ -197,7 +197,16 @@ class RBTreeTest < Test::Unit::TestCase
     
     assert_equal("E", @rbtree.fetch("e", "E"))
     assert_equal("E", @rbtree.fetch("e") { "E" })
+    class << (stderr = "")
+      alias write <<
+    end
+    $stderr, stderr, $VERBOSE, verbose = stderr, $stderr, false, $VERBOSE
+    begin
     assert_equal("E", @rbtree.fetch("e", "F") { "E" })
+    ensure
+      $stderr, stderr, $VERBOSE, verbose = stderr, $stderr, false, $VERBOSE
+    end
+    assert_match(/warning: block supersedes default value argument/, stderr)
     
     assert_raises(ArgumentError) { @rbtree.fetch }
     assert_raises(ArgumentError) { @rbtree.fetch("e", "E", "E") }
@@ -534,7 +543,7 @@ class RBTreeTest < Test::Unit::TestCase
     tree, default, cmp_proc = match.to_a[1..-1]
     assert_equal(%({"a"=>"A", "b"=>"B", "c"=>"C", "d"=>"D"}), tree)
     assert_equal(%("e"), default)
-    assert_match(/#<Proc:\w+(@test.rb:\d+)?>/, cmp_proc)
+    assert_match(/#<Proc:\w+(@#{__FILE__}:\d+)?>/o, cmp_proc)
     
     rbtree = RBTree.new
     assert_match(re, rbtree.inspect)
