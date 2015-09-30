@@ -32,7 +32,7 @@ few methods to take advantage of the ordering:
 Note: while iterating RBTree (e.g. in a block of each method), it is
 not modifiable, or TypeError is thrown.
 
-RBTree supoorts pretty printing using pp.
+RBTree supports pretty printing using pp.
 
 This library contains two classes. One is RBTree and the other is
 MultiRBTree that is a parent class of RBTree. RBTree does not allow
