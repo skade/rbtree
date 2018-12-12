@@ -1521,7 +1521,7 @@ to_flatten_ary_i(dnode_t* node, void* ary)
  * Called by Marshal.dump.
  */
 VALUE
-rbtree_dump(VALUE self, VALUE limit)
+rbtree_dump(VALUE self)
 {
     VALUE ary;
     VALUE ret;
@@ -1535,7 +1535,7 @@ rbtree_dump(VALUE self, VALUE limit)
     rbtree_for_each(self, to_flatten_ary_i, (void*)ary);
     rb_ary_push(ary, IFNONE(self));
 
-    ret = rb_marshal_dump(ary, limit);
+    ret = rb_marshal_dump(ary, Qnil);
     rb_ary_clear(ary);
     rb_gc_force_recycle(ary);
     return ret;
